@@ -268,6 +268,15 @@ def transform_bounding_box(
         return QgsRectangle()
 
 
+LOGGING_SIGNALS: "LoggingSignals | None" = None
+"""The single instance of `LoggingSignals`.
+
+It is kept out of the class: PyQt reads the attributes of a class when it builds its meta object, on its first
+instance, and with PyQt6 reading this very instance, not initialized yet, builds the meta object again, until
+the stack overflows.
+"""
+
+
 class LoggingSignals(QObject):
     """Singleton class that has signals that are triggered by the logging class."""
 
@@ -276,13 +285,13 @@ class LoggingSignals(QObject):
     error = pyqtSignal(str)
     debug = pyqtSignal(str)
 
-    _instance: "LoggingSignals | None" = None
-
     def __new__(cls) -> "LoggingSignals":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        global LOGGING_SIGNALS  # noqa: PLW0603
 
-        return cls._instance
+        if LOGGING_SIGNALS is None:
+            LOGGING_SIGNALS = super().__new__(cls)
+
+        return LOGGING_SIGNALS
 
 
 class QtSignalsHandler(logging.Handler):
