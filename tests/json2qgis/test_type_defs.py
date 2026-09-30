@@ -585,6 +585,25 @@ def test_project_creator_loads_vector_layer_from_datasource(tmp_path) -> None:
     assert list(output_dir.glob("*.gpkg")) == []
 
 
+@pytest.mark.parametrize("datasource_format", ["ogr", "postgres", "oapif", "wfs"])
+def test_project_creator_rejects_provider_format_without_datasource(
+    datasource_format: str,
+) -> None:
+    pytest.importorskip("fastjsonschema")
+
+    project_dict = build_project_dict()
+    dataset_dict = project_dict["datasets"][0]["vector_datasets"][0]
+    dataset_dict["datasource_format"] = datasource_format
+
+    dataset_dict.pop("datasource", None)
+    with pytest.raises(Qgis2JsonError):
+        ProjectCreator(project_dict)
+
+    dataset_dict["datasource"] = ""
+    with pytest.raises(Qgis2JsonError):
+        ProjectCreator(project_dict)
+
+
 def test_project_creator_raises_for_invalid_datasource(tmp_path) -> None:
     creator = ProjectCreator(
         build_datasource_project_dict(f"{tmp_path / 'missing.gpkg'}|layername=missing")

@@ -406,7 +406,7 @@
         },
         "datasource": {
           "type": "string",
-          "description": "The QGIS data source URI of an existing layer, e.g. `/path/to/data.gpkg|layername=roads` for the `ogr` format. When set, the layer is loaded with the data provider matching `datasource_format` (`memory` is not supported) instead of being created. `geometry_type` is then ignored as the data provider decides it, `crs` is still set on the layer, and `data` is not supported."
+          "description": "The QGIS data source URI of an existing layer, e.g. `/path/to/data.gpkg|layername=roads` for the `ogr` format. When set, the layer is loaded with the data provider matching `datasource_format` (`memory` is not supported) instead of being created. `geometry_type` is then ignored as the data provider decides it, `crs` is still set on the layer, and `data` is not supported. Required, and not empty, for the `ogr`, `postgres`, `oapif` and `wfs` formats, which only load existing layers."
         },
         "datasource_format": {
           "enum": [
@@ -529,6 +529,33 @@
                 "pattern": "^EPSG:\\d+$"
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "datasource_format": {
+                "enum": [
+                  "ogr",
+                  "postgres",
+                  "oapif",
+                  "wfs"
+                ]
+              }
+            },
+            "required": [
+              "datasource_format"
+            ]
+          },
+          "then": {
+            "properties": {
+              "datasource": {
+                "minLength": 1
+              }
+            },
+            "required": [
+              "datasource"
+            ]
           }
         }
       ],
