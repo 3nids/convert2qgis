@@ -483,6 +483,7 @@ class BaseDatasetDef(DataclassModelMixin):
 class VectorDatasetDef(BaseDatasetDef):
     layer_type: Literal["vector"] = "vector"  # type: ignore[assignment]
     geometry_type: GeometryType = "NoGeometry"
+    datasource: str = ""
     datasource_format: str = VectorLayerDataprovider.GPKG
     fields: list[FieldDef] = field(default_factory=list)
     virtual_fields: list[FieldDef] = field(default_factory=list)
@@ -507,6 +508,7 @@ class VectorDatasetDef(BaseDatasetDef):
             is_searchable=data.get("is_searchable", False),
             is_removable=data.get("is_removable", True),
             geometry_type=data.get("geometry_type", "NoGeometry"),
+            datasource=data.get("datasource", ""),
             datasource_format=data.get(
                 "datasource_format", VectorLayerDataprovider.GPKG
             ),
