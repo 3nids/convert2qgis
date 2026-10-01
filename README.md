@@ -40,7 +40,7 @@ uv run json2qgis ./samples/sample.json --output-dir ./output/project
 
 ## Development
 
-This project is intended to run inside an environment where the QGIS Python bindings are available.
+This project is intended to run inside an environment where the QGIS Python bindings are available, QGIS 3.44 or later is required.
 Create the virtual environment with system site packages so Python can import QGIS.
 
 ```shell
