@@ -62,7 +62,7 @@ def sample_field():
 
 
 @pytest.fixture
-@check_output("definitions/Field")
+@check_output("$defs/Field")
 def sample_field_def():
     return {
         "name": "Sample Field",
@@ -86,7 +86,7 @@ def sample_field_def():
 
 
 @pytest.fixture
-@check_output("definitions/VectorDataset")
+@check_output("$defs/VectorDataset")
 def sample_vector_layer_def(sample_field_def):
     integer_field = {
         **sample_field_def,
@@ -296,7 +296,7 @@ def sample_vector_layer_def(sample_field_def):
 
 
 @pytest.fixture
-@check_output("definitions/Json2qgisSchema")
+@check_output("")
 def sample_project_def(sample_vector_layer_def):
     return {
         "version": "1.0.0",
@@ -363,7 +363,7 @@ def sample_project_def(sample_vector_layer_def):
 
 
 @pytest.fixture
-@check_output("definitions/Relation")
+@check_output("$defs/Relation")
 def sample_relation_def():
     return {
         "relation_id": "f0eb51d8-77df-4b2f-8f54-826464742ee5",
@@ -381,7 +381,7 @@ def sample_relation_def():
 
 
 @pytest.fixture
-@check_output("definitions/PolymorphicRelation")
+@check_output("$defs/PolymorphicRelation")
 def sample_polymorphic_relation_def():
     return {
         "relation_id": "a1b2c3d4-e5f6-7890-abcd-ef0123456789",

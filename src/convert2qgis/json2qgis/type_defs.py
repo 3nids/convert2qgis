@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, fields
 from enum import Enum
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
     Literal,
@@ -14,9 +15,62 @@ from typing import (
     cast,
 )
 
+
+class JsonSchemaExtra:
+    """
+    JSON Schema keywords added to an annotated attribute when `json_schema.py` generates the bundled schema.
+
+    Pydantic duck-types `__get_pydantic_json_schema__`, so runtime code never imports it.
+    """
+
+    def __init__(self, **keywords: Any) -> None:
+        self.keywords = keywords
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: Any, handler: Callable[[Any], dict[str, Any]]
+    ) -> dict[str, Any]:
+        return {**handler(core_schema), **self.keywords}
+
+
+def json_schema_config(**json_schema_extra: Any) -> dict[str, Any]:
+    """Pydantic config read by `json_schema.py`, the keywords are merged into the JSON Schema of the class."""
+    return {
+        **DataclassModelMixin.__pydantic_config__,
+        "json_schema_extra": json_schema_extra,
+    }
+
+
+EPSG_PATTERN = r"^EPSG:\d+$"
+
 RelationStrength = Literal["association", "composition"]
 ConstraintStrength = Literal["hard", "soft", "not_set"]
 CrsDef = str
+CustomPropertiesDef = Annotated[
+    dict[str, Any],
+    JsonSchemaExtra(additionalProperties={"type": ["string", "number", "boolean"]}),
+]
+FieldType = Annotated[
+    str,
+    JsonSchemaExtra(
+        enum=["string", "integer", "real", "boolean", "datetime", "date", "time"]
+    ),
+]
+WidgetType = Annotated[
+    str,
+    JsonSchemaExtra(
+        enum=[
+            "Hidden",
+            "Color",
+            "TextEdit",
+            "Range",
+            "DateTime",
+            "ExternalResource",
+            "CheckBox",
+            "ValueMap",
+            "ValueRelation",
+        ]
+    ),
+]
 GeometryType = Literal[
     "Point",
     "LineString",
@@ -53,6 +107,12 @@ def _serialize(value: Any) -> Any:
 class DataclassModelMixin:
     __SKIP_FIELDS__: ClassVar[set[str]] = set()
     """List of field names to skip when serializing to dict or comparing for equality. This is useful for fields that are not part of the actual data model, but are used for internal purposes."""
+
+    __pydantic_config__: ClassVar[dict[str, Any]] = {
+        "extra": "forbid",
+        "use_attribute_docstrings": True,
+    }
+    """Pydantic config read by `json_schema.py`, use `json_schema_config()` to add class level JSON Schema keywords."""
 
     def _iter_items(self) -> Iterable[tuple[str, Any]]:
         for key, value in self.__dict__.items():
@@ -99,12 +159,20 @@ class DataclassModelMixin:
 
 @dataclass
 class RelationFieldPairDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["from_field", "to_field"],
+    )
+
     from_field: str = ""
     to_field: str = ""
 
 
 @dataclass
 class RelationDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["relation_id", "name", "from_layer_id", "to_layer_id"],
+    )
+
     relation_id: str = ""
     name: str = ""
     from_layer_id: str = ""
@@ -129,6 +197,17 @@ class RelationDef(DataclassModelMixin):
 
 @dataclass
 class PolymorphicRelationDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=[
+            "relation_id",
+            "name",
+            "from_layer_id",
+            "to_layer_field",
+            "to_layer_expression",
+            "to_layer_ids",
+        ],
+    )
+
     relation_id: str = ""
     name: str = ""
     from_layer_id: str = ""
@@ -188,11 +267,43 @@ class WeakFieldDef(DataclassModelMixin):
 
 @dataclass
 class FieldDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=[
+            "alias",
+            "comment",
+            "length",
+            "name",
+            "precision",
+            "set_default_value_on_update",
+            "type",
+            "widget_config",
+            "widget_type",
+        ],
+        dependentRequired={
+            "constraint_expression": [
+                "constraint_expression_strength",
+                "constraint_expression_description",
+            ],
+            "constraint_expression_description": [
+                "constraint_expression",
+                "constraint_expression_strength",
+            ],
+            "constraint_expression_strength": [
+                "constraint_expression",
+                "constraint_expression_description",
+            ],
+            "is_not_null": ["is_not_null_strength"],
+            "is_not_null_strength": ["is_not_null"],
+            "is_unique": ["is_unique_strength"],
+            "is_unique_strength": ["is_unique"],
+        },
+    )
+
     field_id: str = ""
     name: str = ""
-    type: str = ""
-    length: int = 0
-    precision: int = 0
+    type: FieldType = ""
+    length: Annotated[int, JsonSchemaExtra(minimum=0)] = 0
+    precision: Annotated[int, JsonSchemaExtra(minimum=0, maximum=15)] = 0
     comment: str = ""
     is_not_null: bool = False
     is_not_null_strength: ConstraintStrength = "not_set"
@@ -205,7 +316,7 @@ class FieldDef(DataclassModelMixin):
     set_default_value_on_update: bool = False
     alias: str = ""
     alias_expression: str = ""
-    widget_type: str = ""
+    widget_type: WidgetType = ""
     widget_config: dict[str, object] = field(default_factory=dict)
     is_read_only: bool = False
 
@@ -243,15 +354,23 @@ class LegendTreeItemBaseDef(DataclassModelMixin):
 
 @dataclass
 class LegendTreeLayerDef(LegendTreeItemBaseDef):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["item_id", "name", "legend_item_type", "layer_id"],
+    )
+
     legend_item_type: Literal["layer"] = "layer"  # type: ignore[assignment]
     layer_id: str = ""
 
 
 @dataclass
 class LegendTreeGroupDef(LegendTreeItemBaseDef):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["item_id", "name", "legend_item_type", "children"],
+    )
+
     legend_item_type: Literal["group"] = "group"  # type: ignore[assignment]
     is_mutually_exclusive: bool = False
-    mutually_exclusive_child_index: int = -1
+    mutually_exclusive_child_index: Annotated[int, JsonSchemaExtra(minimum=-1)] = -1
     children: list[LegendTreeItemDef] = field(default_factory=list)
 
     @classmethod
@@ -296,6 +415,11 @@ class VectorLayerDataprovider(str, Enum):
     MEMORY = "memory"
 
 
+VectorDatasourceFormat = Annotated[
+    str, JsonSchemaExtra(enum=[provider.value for provider in VectorLayerDataprovider])
+]
+
+
 @dataclass
 class WeakFormItemDef(DataclassModelMixin):
     item_id: str | None = None
@@ -320,6 +444,54 @@ class WeakFormItemDef(DataclassModelMixin):
         }
 
 
+_FORM_ITEM_JSON_SHAPES: dict[str, dict[str, Any]] = {
+    "FormItemContainer": {
+        "types": ["tab", "group_box", "row"],
+        "properties": [
+            "item_id",
+            "type",
+            "label",
+            "children",
+            "visibility_expression",
+            "background_color",
+            "is_collapsed",
+            "column_count",
+        ],
+        "required": ["item_id", "type", "label"],
+    },
+    "FormItemField": {
+        "types": ["field", "relation"],
+        "properties": [
+            "item_id",
+            "type",
+            "field_name",
+            "visibility_expression",
+            "show_label",
+            "is_read_only",
+            "is_label_on_top",
+        ],
+        "required": ["item_id", "type", "field_name"],
+        "overrides": {
+            "item_id": {"type": "string", "minLength": 1},
+            "field_name": {"type": "string", "minLength": 1},
+        },
+    },
+    "FormItemText": {
+        "types": ["text"],
+        "properties": [
+            "item_id",
+            "type",
+            "label",
+            "visibility_expression",
+            "show_label",
+            "is_markdown",
+        ],
+        "required": ["item_id", "type", "label"],
+    },
+}
+"""The JSON shapes written by `FormItemDef.to_dict()`, depending on the item `type`."""
+
+
 @dataclass
 class FormItemDef(DataclassModelMixin):
     item_id: str = ""
@@ -335,6 +507,37 @@ class FormItemDef(DataclassModelMixin):
     show_label: bool = True
     is_read_only: bool = False
     is_label_on_top: bool = False
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: Any, handler: Any
+    ) -> dict[str, Any]:
+        """Describe each JSON shape of `_FORM_ITEM_JSON_SHAPES`, instead of a single object with every attribute."""
+        json_schema: dict[str, Any] = handler(core_schema)
+        item_schema: dict[str, Any] = handler.resolve_ref_schema(json_schema)
+        properties = item_schema["properties"]
+
+        shape_schemas = []
+        for title, shape in _FORM_ITEM_JSON_SHAPES.items():
+            shape_properties = {
+                name: dict(properties[name]) for name in shape["properties"]
+            }
+            shape_properties["type"] = {"enum": shape["types"], "type": "string"}
+            shape_properties.update(shape.get("overrides", {}))
+            shape_schemas.append(
+                {
+                    "title": title,
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": shape_properties,
+                    "required": shape["required"],
+                }
+            )
+
+        item_schema.clear()
+        item_schema["oneOf"] = shape_schemas
+
+        return json_schema
 
     def to_dict(self) -> dict[str, Any]:
         if self.type in ("field", "relation"):
@@ -428,8 +631,14 @@ class FormItemDef(DataclassModelMixin):
 
 @dataclass
 class VisualStyleDef(DataclassModelMixin):
+    theme: str | None = None
+    """Currently ignored when building the project."""
+
     qml_filename: str | None = None
+    """A path to a QGIS Layer Style file (.qml) that defines the visual style for the layer. The path can be absolute or relative to the JSON file."""
+
     qml_content: str | None = None
+    """The content of a QGIS Layer Style file (.qml) that defines the visual style for the layer."""
 
 
 @dataclass
@@ -470,7 +679,7 @@ class BaseDatasetDef(DataclassModelMixin):
     name: str = ""
     layer_type: LayerType = "vector"
     crs: CrsDef = "EPSG:4326"
-    custom_properties: dict[str, Any] = field(default_factory=dict)
+    custom_properties: CustomPropertiesDef = field(default_factory=dict)
     visual_styles: list[VisualStyleDef] = field(default_factory=list)
     is_read_only: bool = False
     is_identifiable: bool = False
@@ -481,9 +690,35 @@ class BaseDatasetDef(DataclassModelMixin):
 
 @dataclass
 class VectorDatasetDef(BaseDatasetDef):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=[
+            "foreign_keys",
+            "indices",
+            "primary_key",
+            "crs",
+            "datasource_format",
+            "fields",
+            "form_config",
+            "geometry_type",
+            "name",
+            "layer_type",
+        ],
+        # only layers without geometry may have an empty CRS
+        allOf=[
+            {
+                "if": {
+                    "properties": {"geometry_type": {"const": "NoGeometry"}},
+                    "required": ["geometry_type"],
+                },
+                "then": {"properties": {"crs": {"pattern": r"^(EPSG:\d+)?$"}}},
+                "else": {"properties": {"crs": {"pattern": EPSG_PATTERN}}},
+            }
+        ],
+    )
+
     layer_type: Literal["vector"] = "vector"  # type: ignore[assignment]
     geometry_type: GeometryType = "NoGeometry"
-    datasource_format: str = VectorLayerDataprovider.GPKG
+    datasource_format: VectorDatasourceFormat = VectorLayerDataprovider.GPKG
     fields: list[FieldDef] = field(default_factory=list)
     virtual_fields: list[FieldDef] = field(default_factory=list)
     form_config: list[FormItemDef] = field(default_factory=list)
@@ -530,9 +765,14 @@ class VectorDatasetDef(BaseDatasetDef):
 
 @dataclass
 class RasterDatasetDef(BaseDatasetDef):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["crs", "datasource", "datasource_format", "name", "layer_type"],
+    )
+
     layer_type: Literal["raster"] = "raster"  # type: ignore[assignment]
+    crs: Annotated[CrsDef, JsonSchemaExtra(pattern=EPSG_PATTERN)] = "EPSG:4326"
     datasource: str = ""
-    datasource_format: str = "wms"
+    datasource_format: Annotated[str, JsonSchemaExtra(enum=["wms"])] = "wms"
 
     @classmethod
     def _from_dict(cls, data: Mapping[str, Any]) -> RasterDatasetDef:
@@ -547,6 +787,9 @@ class RasterDatasetDef(BaseDatasetDef):
             is_private=data.get("is_private", False),
             is_searchable=data.get("is_searchable", False),
             is_removable=data.get("is_removable", True),
+            visual_styles=[
+                VisualStyleDef.from_data(item) for item in data.get("visual_styles", [])
+            ],
             datasource=data.get("datasource", ""),
             datasource_format=data.get("datasource_format", "wms"),
         )
@@ -557,8 +800,12 @@ DatasetDef = Union[VectorDatasetDef, RasterDatasetDef]
 
 @dataclass
 class ProjectMetadataDef(DataclassModelMixin):
-    custom_properties: dict[str, Any] = field(default_factory=dict)
-    crs: CrsDef = "EPSG:4326"
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["title"],
+    )
+
+    custom_properties: CustomPropertiesDef = field(default_factory=dict)
+    crs: Annotated[CrsDef, JsonSchemaExtra(pattern=EPSG_PATTERN)] = "EPSG:4326"
     author: str = ""
     title: str = ""
     extent: str = ""
@@ -566,6 +813,10 @@ class ProjectMetadataDef(DataclassModelMixin):
 
 @dataclass
 class DatasetGroupDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=["vector_datasets", "raster_datasets"],
+    )
+
     vector_datasets: list[VectorDatasetDef] = field(default_factory=list)
     raster_datasets: list[RasterDatasetDef] = field(default_factory=list)
 
@@ -589,6 +840,17 @@ class DatasetGroupDef(DataclassModelMixin):
 
 @dataclass
 class ProjectDef(DataclassModelMixin):
+    __pydantic_config__: ClassVar[dict[str, Any]] = json_schema_config(
+        required=[
+            "datasets",
+            "project",
+            "relations",
+            "polymorphic_relations",
+            "legend_tree",
+            "version",
+        ],
+    )
+
     project: ProjectMetadataDef = field(default_factory=ProjectMetadataDef)
     version: str = ""
     datasets: list[DatasetGroupDef] = field(default_factory=list)

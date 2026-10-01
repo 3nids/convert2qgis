@@ -37,6 +37,12 @@ The JSON structure is validated against the bundled schema in `src/convert2qgis/
 uv run json2qgis ./samples/sample.json --output-dir ./output/project
 ```
 
+The schema is generated from the dataclasses in `src/convert2qgis/json2qgis/type_defs.py`, regenerate it after changing them.
+
+```shell
+uv run python -m convert2qgis.json2qgis.json_schema
+```
+
 
 ## Development
 

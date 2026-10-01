@@ -166,7 +166,8 @@ def get_schema_validator() -> Callable[[dict[str, Any]], None]:
     schema = get_schema_json()
 
     if fastjsonschema:
-        return fastjsonschema.compile(schema)  # type: ignore[no-any-return]
+        # `use_default=False` prevents the validator from injecting schema defaults into the validated data
+        return fastjsonschema.compile(schema, use_default=False)  # type: ignore[no-any-return]
     else:
         return lambda _data: None
 
@@ -189,12 +190,12 @@ def check_output(
                 schema_node = resolve_path(schema, path)
                 if isinstance(schema_node, dict):
                     schema_node = {
-                        "definitions": schema.get("definitions", {}),
+                        "$defs": schema.get("$defs", {}),
                         **schema_node,
                     }
                 validate = cast(
                     "Callable[[dict[str, Any]], None]",
-                    fastjsonschema.compile(schema_node),
+                    fastjsonschema.compile(schema_node, use_default=False),
                 )
                 _VALIDATORS_BY_PATH[path] = validate
 
