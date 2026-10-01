@@ -26,10 +26,15 @@ from convert2qgis.json2qgis.type_defs import (
     DatasetGroupDef,
     FieldDef,
     LegendTreeGroupDef,
+    OapifDatasourceDef,
+    OgrDatasourceDef,
+    PostgresDatasourceDef,
     ProjectDef,
     ProjectMetadataDef,
     RelationFieldPairDef,
     VectorDatasetDef,
+    WfsDatasourceDef,
+    vector_datasource_from_data,
 )
 from convert2qgis.json2qgis.utils import create_fields
 
@@ -543,11 +548,13 @@ def write_gpkg_layer(gpkg_path: Path, layer_name: str) -> None:
     assert write_result == QgsVectorFileWriter.WriterError.NoError, error_message
 
 
-def build_datasource_project_dict(datasource: str) -> dict[str, Any]:
+def build_datasource_project_dict(
+    datasource: dict[str, Any], datasource_format: str = "ogr"
+) -> dict[str, Any]:
     project_dict = build_project_dict()
     dataset_dict = project_dict["datasets"][0]["vector_datasets"][0]
     dataset_dict["datasource"] = datasource
-    dataset_dict["datasource_format"] = "ogr"
+    dataset_dict["datasource_format"] = datasource_format
     dataset_dict["fields"][0]["alias"] = "Identifier"
     dataset_dict["fields"][0]["widget_type"] = "ValueMap"
     dataset_dict["fields"][0]["widget_config"] = {"map": {"First": "first"}}
@@ -555,14 +562,20 @@ def build_datasource_project_dict(datasource: str) -> dict[str, Any]:
     return project_dict
 
 
-def test_project_creator_loads_vector_layer_from_datasource(tmp_path) -> None:
+@pytest.mark.parametrize("datasource_format", ["gpkg", "ogr"])
+def test_project_creator_loads_vector_layer_from_datasource(
+    tmp_path, datasource_format: str
+) -> None:
     gpkg_path = tmp_path / "source" / "existing.gpkg"
     gpkg_path.parent.mkdir()
     write_gpkg_layer(gpkg_path, "existing")
     output_dir = tmp_path / "output"
 
     creator = ProjectCreator(
-        build_datasource_project_dict(f"{gpkg_path}|layername=existing")
+        build_datasource_project_dict(
+            {"path": str(gpkg_path), "layer_name": "existing"},
+            datasource_format,
+        )
     )
     project = creator.build(output_dir)
     layer = project.mapLayer("layer_1")
@@ -585,6 +598,69 @@ def test_project_creator_loads_vector_layer_from_datasource(tmp_path) -> None:
     assert list(output_dir.glob("*.gpkg")) == []
 
 
+@pytest.mark.parametrize(
+    ("datasource_format", "datasource", "datasource_def_class"),
+    [
+        ("gpkg", {"path": "/data/roads.gpkg"}, OgrDatasourceDef),
+        (
+            "ogr",
+            {"path": "/data/roads.gpkg", "layer_name": "roads"},
+            OgrDatasourceDef,
+        ),
+        (
+            "postgres",
+            {
+                "table": "roads",
+                "schema": "public",
+                "geometry_column": "geom",
+                "key_column": "id",
+                "service": "my_db",
+                "port": 5432,
+                "sslmode": "require",
+            },
+            PostgresDatasourceDef,
+        ),
+        (
+            "wfs",
+            {
+                "url": "https://example.com/wfs",
+                "type_name": "ns:roads",
+                "version": "2.0.0",
+            },
+            WfsDatasourceDef,
+        ),
+        (
+            "oapif",
+            {
+                "url": "https://example.com/ogcapi",
+                "collection": "roads",
+                "authcfg": "abc1234",
+            },
+            OapifDatasourceDef,
+        ),
+    ],
+)
+def test_vector_dataset_def_datasource_round_trip(
+    datasource_format: str,
+    datasource: dict[str, Any],
+    datasource_def_class: type,
+) -> None:
+    project_dict = build_datasource_project_dict(datasource, datasource_format)
+    dataset_dict = project_dict["datasets"][0]["vector_datasets"][0]
+
+    dataset_def = VectorDatasetDef.from_data(dataset_dict)
+
+    assert isinstance(dataset_def.datasource, datasource_def_class)
+    assert dataset_def.to_dict()["datasource"] == datasource
+    # validated against the schema when `fastjsonschema` is available
+    ProjectCreator(project_dict)
+
+
+def test_vector_datasource_from_data_raises_for_memory() -> None:
+    with pytest.raises(NotImplementedError, match="memory"):
+        vector_datasource_from_data("memory", {"path": "/data/roads.gpkg"})
+
+
 @pytest.mark.parametrize("datasource_format", ["ogr", "postgres", "oapif", "wfs"])
 def test_project_creator_rejects_provider_format_without_datasource(
     datasource_format: str,
@@ -599,14 +675,55 @@ def test_project_creator_rejects_provider_format_without_datasource(
     with pytest.raises(Qgis2JsonError):
         ProjectCreator(project_dict)
 
-    dataset_dict["datasource"] = ""
+    dataset_dict["datasource"] = {}
     with pytest.raises(Qgis2JsonError):
         ProjectCreator(project_dict)
 
 
+@pytest.mark.parametrize(
+    ("datasource_format", "datasource"),
+    [
+        ("gpkg", {"path": ""}),
+        ("ogr", "/data/roads.gpkg|layername=roads"),
+        ("ogr", {"table": "roads"}),
+        ("postgres", {"path": "/data/roads.gpkg"}),
+        ("postgres", {"table": "roads", "port": "5432"}),
+        ("postgres", {"table": "roads", "sslmode": "always"}),
+        ("wfs", {"url": "https://example.com/wfs"}),
+        ("wfs", {"url": "https://example.com/wfs", "typename": "ns:roads"}),
+        ("oapif", {"url": "https://example.com/ogcapi", "type_name": "roads"}),
+        ("memory", {"path": "/data/roads.gpkg"}),
+    ],
+)
+def test_project_creator_rejects_invalid_datasource(
+    datasource_format: str, datasource: Any
+) -> None:
+    pytest.importorskip("fastjsonschema")
+
+    with pytest.raises(Qgis2JsonError):
+        ProjectCreator(build_datasource_project_dict(datasource, datasource_format))
+
+
+@pytest.mark.parametrize("datasource_format", ["memory", "postgres"])
+def test_project_creator_raises_for_datasource_not_matching_format(
+    tmp_path, datasource_format: str
+) -> None:
+    creator = ProjectCreator(
+        build_datasource_project_dict({"path": str(tmp_path / "existing.gpkg")})
+    )
+    [dataset_def] = creator.definition.datasets[0].vector_datasets
+    # bypass the schema validation, which already rejects such definitions
+    dataset_def.datasource_format = datasource_format
+
+    with pytest.raises(UnknownVectorLayerDataproviderError, match='"OgrDatasourceDef"'):
+        creator.build(tmp_path)
+
+
 def test_project_creator_raises_for_invalid_datasource(tmp_path) -> None:
     creator = ProjectCreator(
-        build_datasource_project_dict(f"{tmp_path / 'missing.gpkg'}|layername=missing")
+        build_datasource_project_dict(
+            {"path": str(tmp_path / "missing.gpkg"), "layer_name": "missing"}
+        )
     )
 
     with pytest.raises(Qgis2JsonError, match="Vector layer invalid: Survey"):
@@ -616,7 +733,9 @@ def test_project_creator_raises_for_invalid_datasource(tmp_path) -> None:
 def test_project_creator_raises_for_data_with_datasource(tmp_path) -> None:
     gpkg_path = tmp_path / "existing.gpkg"
     write_gpkg_layer(gpkg_path, "existing")
-    project_dict = build_datasource_project_dict(f"{gpkg_path}|layername=existing")
+    project_dict = build_datasource_project_dict(
+        {"path": str(gpkg_path), "layer_name": "existing"}
+    )
     project_dict["datasets"][0]["vector_datasets"][0]["data"] = [{"uuid": "first"}]
 
     creator = ProjectCreator(project_dict)
@@ -624,14 +743,4 @@ def test_project_creator_raises_for_data_with_datasource(tmp_path) -> None:
     with pytest.raises(
         NotImplementedError, match='"Survey" with an existing datasource'
     ):
-        creator.build(tmp_path)
-
-
-def test_project_creator_raises_for_memory_datasource(tmp_path) -> None:
-    project_dict = build_datasource_project_dict("NoGeometry")
-    project_dict["datasets"][0]["vector_datasets"][0]["datasource_format"] = "memory"
-
-    creator = ProjectCreator(project_dict)
-
-    with pytest.raises(UnknownVectorLayerDataproviderError):
         creator.build(tmp_path)

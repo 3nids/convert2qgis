@@ -14,6 +14,7 @@ from qgis.core import (
     QgsAttributeEditorTextElement,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
+    QgsDataSourceUri,
     QgsDefaultValue,
     QgsEditFormConfig,
     QgsEditorWidgetSetup,
@@ -31,6 +32,7 @@ from qgis.core import (
     QgsProject,
     QgsProperty,
     QgsPropertyCollection,
+    QgsProviderRegistry,
     QgsRectangle,
     QgsRelation,
     QgsVectorLayer,
@@ -54,13 +56,18 @@ from convert2qgis.json2qgis.type_defs import (
     LegendTreeGroupDef,
     LegendTreeItemDef,
     LegendTreeLayerDef,
+    OapifDatasourceDef,
+    OgrDatasourceDef,
     PolymorphicRelationDef,
+    PostgresDatasourceDef,
     ProjectDef,
     RelationDef,
     RelationStrength,
     VectorDatasetDef,
+    VectorDatasourceDef,
     VectorLayerDataprovider,
     VisualStyleDef,
+    WfsDatasourceDef,
     dataset_from_data,
 )
 
@@ -519,6 +526,80 @@ def create_fields(dataset_def: "VectorDatasetDef | dict[str, Any]") -> QgsFields
         fields.append(field)
 
     return fields
+
+
+def get_vector_datasource_uri(datasource: VectorDatasourceDef) -> tuple[str, str]:
+    """
+    Builds the QGIS data provider key and data source URI to load an existing vector layer.
+
+    Args:
+        datasource: The existing vector layer datasource definition.
+
+    Returns:
+        A tuple of the QGIS data provider key and the data source URI.
+
+    """
+    if isinstance(datasource, OgrDatasourceDef):
+        provider_registry = QgsProviderRegistry.instance()
+
+        assert provider_registry is not None
+
+        uri_parts = {"path": datasource.path}
+
+        if datasource.layer_name:
+            uri_parts["layerName"] = datasource.layer_name
+
+        return "ogr", provider_registry.encodeUri("ogr", uri_parts)
+
+    # NOTE empty connection values are skipped when the URI is serialized
+    uri = QgsDataSourceUri()
+    uri.setAuthConfigId(datasource.authcfg or "")
+
+    if isinstance(datasource, PostgresDatasourceDef):
+        # NOTE set as params like the QGIS postgres provider `encodeUri` does, so `service` can be combined with `host` and `port`
+        for key, value in (
+            ("service", datasource.service),
+            ("host", datasource.host),
+            ("port", datasource.port),
+        ):
+            if value:
+                uri.setParam(key, str(value))
+
+        uri.setDatabase(datasource.dbname or "")
+        uri.setUsername(datasource.username or "")
+        uri.setPassword(datasource.password or "")
+
+        if datasource.sslmode:
+            uri.setSslMode(QgsDataSourceUri.decodeSslMode(datasource.sslmode))
+
+        uri.setDataSource(
+            datasource.schema or "",
+            datasource.table,
+            datasource.geometry_column or "",
+            "",
+            datasource.key_column or "",
+        )
+
+        return "postgres", uri.uri(False)
+
+    if isinstance(datasource, WfsDatasourceDef):
+        uri.setParam("url", datasource.url)
+        uri.setParam("typename", datasource.type_name)
+
+        if datasource.version:
+            uri.setParam("version", datasource.version)
+
+        return "WFS", uri.uri(False)
+
+    if isinstance(datasource, OapifDatasourceDef):
+        uri.setParam("url", datasource.url)
+        uri.setParam("typename", datasource.collection)
+
+        return "OAPIF", uri.uri(False)
+
+    raise NotImplementedError(  # type: ignore[unreachable]
+        f"Unsupported vector datasource: {type(datasource).__name__}"
+    )
 
 
 def set_layer_virtual_fields(
