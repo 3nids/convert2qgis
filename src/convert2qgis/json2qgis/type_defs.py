@@ -437,13 +437,23 @@ class VisualStyleDef(DataclassModelMixin):
 
 
 @dataclass
-class OgrDatasourceDef(DataclassModelMixin):
+class VectorDatasourceBaseDef(DataclassModelMixin):
+    provider_key: ClassVar[str]
+    """The QGIS data provider key to load the layer with."""
+
+
+@dataclass
+class OgrDatasourceDef(VectorDatasourceBaseDef):
+    provider_key: ClassVar[str] = "ogr"
+
     path: str = ""
     layer_name: str | None = None
 
 
 @dataclass
-class PostgresDatasourceDef(DataclassModelMixin):
+class PostgresDatasourceDef(VectorDatasourceBaseDef):
+    provider_key: ClassVar[str] = "postgres"
+
     table: str = ""
     schema: str | None = None
     geometry_column: str | None = None
@@ -459,7 +469,9 @@ class PostgresDatasourceDef(DataclassModelMixin):
 
 
 @dataclass
-class WfsDatasourceDef(DataclassModelMixin):
+class WfsDatasourceDef(VectorDatasourceBaseDef):
+    provider_key: ClassVar[str] = "WFS"
+
     url: str = ""
     type_name: str = ""
     version: WfsVersion | None = None
@@ -467,7 +479,9 @@ class WfsDatasourceDef(DataclassModelMixin):
 
 
 @dataclass
-class OapifDatasourceDef(DataclassModelMixin):
+class OapifDatasourceDef(VectorDatasourceBaseDef):
+    provider_key: ClassVar[str] = "OAPIF"
+
     url: str = ""
     collection: str = ""
     authcfg: str | None = None

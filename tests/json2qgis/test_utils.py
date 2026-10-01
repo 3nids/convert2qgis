@@ -1856,11 +1856,11 @@ class TestUtils:
         assert style_category == QgsMapLayer.StyleCategory.AllStyleCategories
 
     def test_get_vector_datasource_uri_for_ogr(self):
-        provider_key, uri = get_vector_datasource_uri(
+        uri = get_vector_datasource_uri(
             OgrDatasourceDef(path="/data/my roads.gpkg", layer_name="roads")
         )
 
-        assert provider_key == "ogr"
+        assert OgrDatasourceDef.provider_key == "ogr"
         assert QgsProviderRegistry.instance().decodeUri("ogr", uri) == {
             "layerId": None,
             "layerName": "roads",
@@ -1868,15 +1868,13 @@ class TestUtils:
         }
 
     def test_get_vector_datasource_uri_for_ogr_without_layer_name(self):
-        provider_key, uri = get_vector_datasource_uri(
-            OgrDatasourceDef(path="/data/roads.geojson")
-        )
+        uri = get_vector_datasource_uri(OgrDatasourceDef(path="/data/roads.geojson"))
 
-        assert provider_key == "ogr"
+        assert OgrDatasourceDef.provider_key == "ogr"
         assert uri == "/data/roads.geojson"
 
     def test_get_vector_datasource_uri_for_postgres(self):
-        provider_key, uri = get_vector_datasource_uri(
+        uri = get_vector_datasource_uri(
             PostgresDatasourceDef(
                 schema="public",
                 table="roads",
@@ -1895,7 +1893,7 @@ class TestUtils:
 
         datasource_uri = QgsDataSourceUri(uri)
 
-        assert provider_key == "postgres"
+        assert PostgresDatasourceDef.provider_key == "postgres"
         assert datasource_uri.service() == "my_db"
         assert datasource_uri.host() == "db.example.com"
         assert datasource_uri.port() == "5433"
@@ -1910,16 +1908,14 @@ class TestUtils:
         assert datasource_uri.keyColumn() == "id"
 
     def test_get_vector_datasource_uri_for_postgres_table_only(self):
-        provider_key, uri = get_vector_datasource_uri(
-            PostgresDatasourceDef(table="roads")
-        )
+        uri = get_vector_datasource_uri(PostgresDatasourceDef(table="roads"))
 
-        assert provider_key == "postgres"
+        assert PostgresDatasourceDef.provider_key == "postgres"
         # unset connection values are not written to the URI
         assert uri.split() == ['table="roads"']
 
     def test_get_vector_datasource_uri_for_wfs(self):
-        provider_key, uri = get_vector_datasource_uri(
+        uri = get_vector_datasource_uri(
             WfsDatasourceDef(
                 url="https://example.com/wfs?map=roads&lang=en",
                 type_name="ns:roads",
@@ -1929,7 +1925,7 @@ class TestUtils:
         )
         datasource_uri = QgsDataSourceUri(uri)
 
-        assert provider_key == "WFS"
+        assert WfsDatasourceDef.provider_key == "WFS"
         assert (
             datasource_uri.param("url") == "https://example.com/wfs?map=roads&lang=en"
         )
@@ -1938,12 +1934,12 @@ class TestUtils:
         assert datasource_uri.authConfigId() == "abc1234"
 
     def test_get_vector_datasource_uri_for_oapif(self):
-        provider_key, uri = get_vector_datasource_uri(
+        uri = get_vector_datasource_uri(
             OapifDatasourceDef(url="https://example.com/ogcapi", collection="roads")
         )
         datasource_uri = QgsDataSourceUri(uri)
 
-        assert provider_key == "OAPIF"
+        assert OapifDatasourceDef.provider_key == "OAPIF"
         assert datasource_uri.param("url") == "https://example.com/ogcapi"
         assert datasource_uri.param("typename") == "roads"
         assert datasource_uri.authConfigId() == ""

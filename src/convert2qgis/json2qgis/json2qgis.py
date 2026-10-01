@@ -443,7 +443,7 @@ class ProjectCreator:
                 f'Cannot add data to vector layer "{dataset_def.name}" with an existing datasource, data can only be written to created layers.'
             )
 
-        provider_key, uri = get_vector_datasource_uri(dataset_def.datasource)
+        provider_key = dataset_def.datasource.provider_key
 
         # NOTE the datasource URI is not logged, as it might contain credentials
         logger.info(
@@ -452,7 +452,11 @@ class ProjectCreator:
             provider_key,
         )
 
-        layer = QgsVectorLayer(uri, dataset_def.name, provider_key)
+        layer = QgsVectorLayer(
+            get_vector_datasource_uri(dataset_def.datasource),
+            dataset_def.name,
+            provider_key,
+        )
 
         if not layer.isValid():
             raise Qgis2JsonError(f"Vector layer invalid: {dataset_def.name}")
