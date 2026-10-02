@@ -432,8 +432,14 @@ class FormItemDef(DataclassModelMixin):
 
 @dataclass
 class VisualStyleDef(DataclassModelMixin):
+    theme: str | None = None
+    """Currently ignored when building the project."""
+
     qml_filename: str | None = None
+    """A path to a QGIS Layer Style file (.qml) that defines the visual style for the layer. The path can be absolute or relative to the JSON file."""
+
     qml_content: str | None = None
+    """The content of a QGIS Layer Style file (.qml) that defines the visual style for the layer."""
 
 
 @dataclass
