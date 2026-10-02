@@ -158,6 +158,10 @@
         "widget_config": {
           "additionalProperties": true,
           "type": "object"
+        },
+        "is_read_only": {
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
