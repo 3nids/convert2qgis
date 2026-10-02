@@ -1027,7 +1027,9 @@
           "type": "string"
         },
         "indices": {
-          "items": {},
+          "items": {
+            "type": "string"
+          },
           "type": "array"
         },
         "foreign_keys": {
