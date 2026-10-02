@@ -18,6 +18,7 @@ from convert2qgis.json2qgis.errors import (
 from convert2qgis.json2qgis.generate import (
     generate_field_def,
     generate_form_item_def,
+    generate_raster_dataset_def,
     generate_relation_def,
     generate_vector_dataset_def,
 )
@@ -31,6 +32,7 @@ from convert2qgis.json2qgis.type_defs import (
     PostgresDatasourceDef,
     ProjectDef,
     ProjectMetadataDef,
+    RasterDatasetDef,
     RelationFieldPairDef,
     VectorDatasetDef,
     WfsDatasourceDef,
@@ -221,6 +223,20 @@ def test_vector_layer_round_trip_with_row_form_container() -> None:
         }
     )
 
+    assert dataset_def.to_dict() == layer_dict
+
+
+def test_raster_layer_round_trip_with_visual_styles() -> None:
+    layer_dict = generate_raster_dataset_def(
+        layer_id="raster_1",
+        name="Basemap",
+        datasource="type=xyz&url=https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        visual_styles=[{"qml_content": "<qgis/>"}],
+    ).to_dict()
+
+    dataset_def = RasterDatasetDef.from_data(layer_dict)
+
+    assert dataset_def.visual_styles[0].qml_content == "<qgis/>"
     assert dataset_def.to_dict() == layer_dict
 
 

@@ -642,6 +642,9 @@ class RasterDatasetDef(BaseDatasetDef):
             is_private=data.get("is_private", False),
             is_searchable=data.get("is_searchable", False),
             is_removable=data.get("is_removable", True),
+            visual_styles=[
+                VisualStyleDef.from_data(item) for item in data.get("visual_styles", [])
+            ],
             datasource=data.get("datasource", ""),
             datasource_format=data.get("datasource_format", "wms"),
         )

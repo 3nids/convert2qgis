@@ -639,6 +639,12 @@
           },
           "type": "object"
         },
+        "visual_styles": {
+          "items": {
+            "$ref": "#/$defs/VisualStyle"
+          },
+          "type": "array"
+        },
         "is_read_only": {
           "default": false,
           "type": "boolean"
