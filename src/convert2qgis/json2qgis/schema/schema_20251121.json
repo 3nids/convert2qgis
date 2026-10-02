@@ -319,96 +319,83 @@
       "type": "object"
     },
     "LegendTreeGroup": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/LegendTreeItemBase"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "is_mutually_exclusive": {
-              "type": "boolean"
-            },
-            "mutually_exclusive_child_index": {
-              "minimum": -1,
-              "type": "integer"
-            },
-            "children": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/LegendTreeItem"
-              }
-            },
-            "legend_item_type": {
-              "type": "string",
-              "const": "group"
-            }
-          },
-          "required": [
-            "children"
-          ]
-        }
-      ]
-    },
-    "LegendTreeItem": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/LegendTreeGroup"
-        },
-        {
-          "$ref": "#/$defs/LegendTreeLayer"
-        }
-      ],
-      "unevaluatedProperties": false
-    },
-    "LegendTreeItemBase": {
+      "additionalProperties": false,
       "properties": {
         "item_id": {
           "type": "string"
         },
-        "is_checked": {
-          "type": "boolean"
+        "legend_item_type": {
+          "const": "group",
+          "type": "string"
         },
         "name": {
           "type": "string"
         },
+        "is_checked": {
+          "default": true,
+          "type": "boolean"
+        },
+        "is_mutually_exclusive": {
+          "default": false,
+          "type": "boolean"
+        },
+        "mutually_exclusive_child_index": {
+          "default": -1,
+          "minimum": -1,
+          "type": "integer"
+        },
+        "children": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/LegendTreeGroup"
+              },
+              {
+                "$ref": "#/$defs/LegendTreeLayer"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "legend_item_type",
+        "children"
+      ],
+      "title": "LegendTreeGroup",
+      "type": "object"
+    },
+    "LegendTreeLayer": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "type": "string"
+        },
         "legend_item_type": {
-          "enum": [
-            "group",
-            "layer"
-          ],
+          "const": "layer",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "is_checked": {
+          "default": true,
+          "type": "boolean"
+        },
+        "layer_id": {
           "type": "string"
         }
       },
       "required": [
         "item_id",
         "name",
-        "legend_item_type"
+        "legend_item_type",
+        "layer_id"
       ],
-      "title": "Child",
+      "title": "LegendTreeLayer",
       "type": "object"
-    },
-    "LegendTreeLayer": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/LegendTreeItemBase"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "layer_id": {
-              "type": "string"
-            },
-            "legend_item_type": {
-              "type": "string",
-              "const": "layer"
-            }
-          },
-          "required": [
-            "layer_id"
-          ]
-        }
-      ]
     },
     "OapifDatasource": {
       "additionalProperties": false,
