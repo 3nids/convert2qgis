@@ -1,15 +1,27 @@
 {
-  "$ref": "#/definitions/Json2qgisSchema",
-  "$schema": "https://json-schema.org/draft/2019-09/schema#",
-  "definitions": {
-    "CustomProperties": {
-      "additionalProperties": {
-        "type": [
-          "string",
-          "number",
-          "boolean"
-        ]
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "DatasetGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "vector_datasets": {
+          "items": {
+            "$ref": "#/$defs/VectorDataset"
+          },
+          "type": "array"
+        },
+        "raster_datasets": {
+          "items": {
+            "$ref": "#/$defs/RasterDataset"
+          },
+          "type": "array"
+        }
       },
+      "required": [
+        "vector_datasets",
+        "raster_datasets"
+      ],
+      "title": "DatasetGroup",
       "type": "object"
     },
     "Field": {
@@ -41,71 +53,12 @@
         ]
       },
       "properties": {
-        "alias": {
-          "type": "string"
-        },
-        "alias_expression": {
-          "type": "string"
-        },
-        "comment": {
-          "type": "string"
-        },
-        "constraint_expression": {
-          "type": "string"
-        },
-        "constraint_expression_description": {
-          "type": "string"
-        },
-        "constraint_expression_strength": {
-          "enum": [
-            "hard",
-            "soft",
-            "not_set"
-          ],
-          "type": "string"
-        },
-        "default_value": {
-          "type": "string"
-        },
         "field_id": {
+          "default": "",
           "type": "string"
-        },
-        "is_not_null": {
-          "type": "boolean"
-        },
-        "is_not_null_strength": {
-          "enum": [
-            "hard",
-            "soft",
-            "not_set"
-          ],
-          "type": "string"
-        },
-        "is_unique": {
-          "type": "boolean"
-        },
-        "is_unique_strength": {
-          "enum": [
-            "hard",
-            "soft",
-            "not_set"
-          ],
-          "type": "string"
-        },
-        "length": {
-          "minimum": 0,
-          "type": "integer"
         },
         "name": {
           "type": "string"
-        },
-        "precision": {
-          "maximum": 15,
-          "minimum": 0,
-          "type": "integer"
-        },
-        "set_default_value_on_update": {
-          "type": "boolean"
         },
         "type": {
           "enum": [
@@ -119,8 +72,74 @@
           ],
           "type": "string"
         },
-        "widget_config": {
-          "$ref": "#/definitions/WidgetConfig"
+        "length": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "precision": {
+          "maximum": 15,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "comment": {
+          "type": "string"
+        },
+        "is_not_null": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_not_null_strength": {
+          "default": "not_set",
+          "enum": [
+            "hard",
+            "soft",
+            "not_set"
+          ],
+          "type": "string"
+        },
+        "constraint_expression": {
+          "default": "",
+          "type": "string"
+        },
+        "constraint_expression_description": {
+          "default": "",
+          "type": "string"
+        },
+        "constraint_expression_strength": {
+          "default": "not_set",
+          "enum": [
+            "hard",
+            "soft",
+            "not_set"
+          ],
+          "type": "string"
+        },
+        "is_unique": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_unique_strength": {
+          "default": "not_set",
+          "enum": [
+            "hard",
+            "soft",
+            "not_set"
+          ],
+          "type": "string"
+        },
+        "default_value": {
+          "default": "",
+          "type": "string"
+        },
+        "set_default_value_on_update": {
+          "type": "boolean"
+        },
+        "alias": {
+          "type": "string"
+        },
+        "alias_expression": {
+          "default": "",
+          "type": "string"
         },
         "widget_type": {
           "enum": [
@@ -135,6 +154,10 @@
             "ValueRelation"
           ],
           "type": "string"
+        },
+        "widget_config": {
+          "additionalProperties": true,
+          "type": "object"
         }
       },
       "required": [
@@ -151,77 +174,23 @@
       "title": "Field",
       "type": "object"
     },
-    "FormConfig": {
-      "items": {
-        "$ref": "#/definitions/FormItemContainer"
-      },
-      "type": "array"
-    },
-    "VisualStyle": {
-      "anyOf": [
-        {
-          "type": "object",
-          "properties": {
-            "theme": {
-              "type": [
-                "null",
-                "string"
-              ]
-            },
-            "qml_filename": {
-              "type": "string",
-              "description": "A path to a QGIS Layer Style file (.qlr) that defines the visual style for the layer. The path can be absolute or relative to the JSON file."
-            }
-          }
-        },
-        {
-          "type": "object",
-          "properties": {
-            "theme": {
-              "type": [
-                "null",
-                "string"
-              ]
-            },
-            "qml_content": {
-              "type": "string",
-              "description": "The content of a QGIS Layer Style file (.qlr) that defines the visual style for the layer."
-            }
-          }
-        }
-      ]
-    },
     "FormItem": {
       "oneOf": [
         {
-          "$ref": "#/definitions/FormItemContainer"
+          "$ref": "#/$defs/FormItemContainer"
         },
         {
-          "$ref": "#/definitions/FormItemField"
+          "$ref": "#/$defs/FormItemField"
         },
         {
-          "$ref": "#/definitions/FormItemText"
+          "$ref": "#/$defs/FormItemText"
         }
-      ],
-      "title": "Item",
-      "type": "object"
+      ]
     },
     "FormItemContainer": {
       "additionalProperties": false,
       "properties": {
-        "background_color": {
-          "type": "string"
-        },
-        "column_count": {
-          "type": "integer"
-        },
-        "is_collapsed": {
-          "type": "boolean"
-        },
         "item_id": {
-          "type": "string"
-        },
-        "label": {
           "type": "string"
         },
         "type": {
@@ -232,14 +201,30 @@
           ],
           "type": "string"
         },
-        "visibility_expression": {
+        "label": {
           "type": "string"
         },
         "children": {
           "items": {
-            "$ref": "#/definitions/FormItem"
+            "$ref": "#/$defs/FormItem"
           },
           "type": "array"
+        },
+        "visibility_expression": {
+          "default": "",
+          "type": "string"
+        },
+        "background_color": {
+          "default": "",
+          "type": "string"
+        },
+        "is_collapsed": {
+          "default": false,
+          "type": "boolean"
+        },
+        "column_count": {
+          "default": 1,
+          "type": "integer"
         }
       },
       "required": [
@@ -247,28 +232,15 @@
         "type",
         "label"
       ],
-      "title": "Form Item Container",
+      "title": "FormItemContainer",
       "type": "object"
     },
     "FormItemField": {
       "additionalProperties": false,
       "properties": {
-        "field_name": {
-          "minLength": 1,
-          "type": "string"
-        },
-        "is_label_on_top": {
-          "type": "boolean"
-        },
-        "is_read_only": {
-          "type": "boolean"
-        },
         "item_id": {
           "minLength": 1,
           "type": "string"
-        },
-        "show_label": {
-          "type": "boolean"
         },
         "type": {
           "enum": [
@@ -277,8 +249,25 @@
           ],
           "type": "string"
         },
-        "visibility_expression": {
+        "field_name": {
+          "minLength": 1,
           "type": "string"
+        },
+        "visibility_expression": {
+          "default": "",
+          "type": "string"
+        },
+        "show_label": {
+          "default": true,
+          "type": "boolean"
+        },
+        "is_read_only": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_label_on_top": {
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
@@ -286,7 +275,7 @@
         "type",
         "field_name"
       ],
-      "title": "Form Item Field",
+      "title": "FormItemField",
       "type": "object"
     },
     "FormItemText": {
@@ -294,12 +283,6 @@
       "properties": {
         "item_id": {
           "type": "string"
-        },
-        "show_label": {
-          "type": "boolean"
-        },
-        "is_markdown": {
-          "type": "boolean"
         },
         "type": {
           "enum": [
@@ -314,7 +297,16 @@
           "type": "string"
         },
         "visibility_expression": {
+          "default": "",
           "type": "string"
+        },
+        "show_label": {
+          "default": true,
+          "type": "boolean"
+        },
+        "is_markdown": {
+          "default": false,
+          "type": "boolean"
         }
       },
       "required": [
@@ -322,190 +314,438 @@
         "type",
         "label"
       ],
-      "title": "Form Item Text",
+      "title": "FormItemText",
       "type": "object"
     },
-    "Json2qgisSchema": {
-      "additionalProperties": false,
-      "properties": {
-        "datasets": {
-          "items": {
-            "$ref": "#/definitions/DatasetGroup"
-          },
-          "type": "array"
+    "LegendTreeGroup": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LegendTreeItemBase"
         },
-        "legend_tree": {
-          "$ref": "#/definitions/LegendTreeGroup"
-        },
-        "polymorphic_relations": {
-          "items": {
-            "$ref": "#/definitions/PolymorphicRelation"
-          },
-          "type": "array"
-        },
-        "project": {
-          "$ref": "#/definitions/Project"
-        },
-        "relations": {
-          "items": {
-            "$ref": "#/definitions/Relation"
-          },
-          "type": "array"
-        },
-        "version": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "datasets",
-        "project",
-        "relations",
-        "polymorphic_relations",
-        "legend_tree",
-        "version"
-      ],
-      "title": "Empty",
-      "type": "object"
-    },
-    "DatasetGroup": {
-      "additionalProperties": false,
-      "properties": {
-        "raster_datasets": {
-          "items": {
-            "$ref": "#/definitions/RasterDataset"
-          },
-          "type": "array"
-        },
-        "vector_datasets": {
-          "items": {
-            "$ref": "#/definitions/VectorDataset"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "vector_datasets",
-        "raster_datasets"
-      ],
-      "type": "object"
-    },
-    "VectorDataset": {
-      "additionalProperties": false,
-      "properties": {
-        "crs": {
-          "type": "string"
-        },
-        "custom_properties": {
-          "$ref": "#/definitions/CustomProperties"
-        },
-        "data": {
-          "items": {
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "datasource": {
+        {
           "type": "object",
-          "description": "An existing layer to load instead of creating a new one. Its properties depend on `datasource_format`: `OgrDatasource` for `gpkg` and `ogr`, `PostgresDatasource` for `postgres`, `WfsDatasource` for `wfs` and `OapifDatasource` for `oapif`. `geometry_type` is then ignored as the data provider decides it, `crs` is still set on the layer, and `data` is not supported. Required for the `ogr`, `postgres`, `wfs` and `oapif` formats, which only load existing layers, and not supported for `memory`."
-        },
-        "datasource_format": {
-          "enum": [
-            "gpkg",
-            "memory",
-            "ogr",
-            "postgres",
-            "oapif",
-            "wfs"
-          ],
-          "type": "string"
-        },
-        "display_expression": {
-          "type": "string"
-        },
-        "fields": {
-          "items": {
-            "$ref": "#/definitions/Field"
+          "properties": {
+            "is_mutually_exclusive": {
+              "type": "boolean"
+            },
+            "mutually_exclusive_child_index": {
+              "minimum": -1,
+              "type": "integer"
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LegendTreeItem"
+              }
+            },
+            "legend_item_type": {
+              "type": "string",
+              "const": "group"
+            }
           },
-          "type": "array"
+          "required": [
+            "children"
+          ]
+        }
+      ]
+    },
+    "LegendTreeItem": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/LegendTreeGroup"
         },
-        "virtual_fields": {
-          "items": {
-            "$ref": "#/definitions/Field"
-          },
-          "type": "array"
-        },
-        "foreign_keys": {
-          "items": {},
-          "type": "array"
-        },
-        "form_config": {
-          "$ref": "#/definitions/FormConfig"
-        },
-        "visual_styles": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/VisualStyle"
-          }
-        },
-        "geometry_type": {
-          "enum": [
-            "Point",
-            "LineString",
-            "Polygon",
-            "MultiPoint",
-            "MultiLineString",
-            "MultiPolygon",
-            "NoGeometry"
-          ],
+        {
+          "$ref": "#/$defs/LegendTreeLayer"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "LegendTreeItemBase": {
+      "properties": {
+        "item_id": {
           "type": "string"
         },
-        "indices": {
-          "items": {},
-          "type": "array"
-        },
-        "is_identifiable": {
+        "is_checked": {
           "type": "boolean"
-        },
-        "is_private": {
-          "type": "boolean"
-        },
-        "is_read_only": {
-          "type": "boolean"
-        },
-        "is_removable": {
-          "type": "boolean"
-        },
-        "is_searchable": {
-          "type": "boolean"
-        },
-        "layer_id": {
-          "type": "string"
-        },
-        "layer_type": {
-          "type": "string",
-          "const": "vector"
         },
         "name": {
           "type": "string"
         },
-        "primary_key": {
+        "legend_item_type": {
+          "enum": [
+            "group",
+            "layer"
+          ],
           "type": "string"
         }
       },
       "required": [
-        "foreign_keys",
-        "indices",
-        "primary_key",
+        "item_id",
+        "name",
+        "legend_item_type"
+      ],
+      "title": "Child",
+      "type": "object"
+    },
+    "LegendTreeLayer": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/LegendTreeItemBase"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "layer_id": {
+              "type": "string"
+            },
+            "legend_item_type": {
+              "type": "string",
+              "const": "layer"
+            }
+          },
+          "required": [
+            "layer_id"
+          ]
+        }
+      ]
+    },
+    "OapifDatasource": {
+      "additionalProperties": false,
+      "description": "A collection of an OGC API - Features service.",
+      "properties": {
+        "url": {
+          "description": "The URL of the service landing page, e.g. `https://example.com/ogcapi`.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "collection": {
+          "description": "The ID of the collection, e.g. `roads`.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "authcfg": {
+          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "collection"
+      ],
+      "title": "OGC API Features Datasource",
+      "type": "object"
+    },
+    "OgrDatasource": {
+      "additionalProperties": false,
+      "description": "An existing layer in a file readable by OGR, e.g. a GeoPackage, a Shapefile or a GeoJSON file.",
+      "properties": {
+        "path": {
+          "description": "The path to the file, e.g. `/path/to/data.gpkg`.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "layer_name": {
+          "description": "The name of the layer in the file, e.g. `roads`. If not set, the first layer of the file is loaded.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "title": "OGR Datasource",
+      "type": "object"
+    },
+    "PolymorphicRelation": {
+      "additionalProperties": false,
+      "properties": {
+        "relation_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "from_layer_id": {
+          "type": "string"
+        },
+        "to_layer_field": {
+          "type": "string"
+        },
+        "to_layer_expression": {
+          "type": "string"
+        },
+        "to_layer_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "field_pairs": {
+          "items": {
+            "$ref": "#/$defs/RelationFieldPair"
+          },
+          "type": "array"
+        },
+        "strength": {
+          "default": "association",
+          "enum": [
+            "association",
+            "composition"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "relation_id",
+        "name",
+        "from_layer_id",
+        "to_layer_field",
+        "to_layer_expression",
+        "to_layer_ids"
+      ],
+      "title": "PolymorphicRelation",
+      "type": "object"
+    },
+    "PostgresDatasource": {
+      "additionalProperties": false,
+      "description": "An existing table or view in a PostgreSQL database. The connection is set either with a `service` from the `pg_service.conf` file, or with `host`, `port` and `dbname`. Prefer `service` or `authcfg` over `username` and `password`, as these are stored as plain text in the project file.",
+      "properties": {
+        "table": {
+          "description": "The name of the table or view, e.g. `roads`.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "schema": {
+          "description": "The schema of the table or view, e.g. `public`.",
+          "type": "string"
+        },
+        "geometry_column": {
+          "description": "The name of the geometry column, e.g. `geom`. Not set for tables without geometry.",
+          "type": "string"
+        },
+        "key_column": {
+          "description": "The name of the column that uniquely identifies the features, e.g. `id`. QGIS detects the primary key of tables, so it is mostly needed for views.",
+          "type": "string"
+        },
+        "service": {
+          "description": "The name of a service in the `pg_service.conf` file, e.g. `my_db`.",
+          "type": "string"
+        },
+        "host": {
+          "description": "The database server host name, e.g. `db.example.com`.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The database server port, e.g. `5432`.",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "dbname": {
+          "description": "The name of the database, e.g. `gis`.",
+          "type": "string"
+        },
+        "username": {
+          "description": "The database user name.",
+          "type": "string"
+        },
+        "password": {
+          "description": "The database user password, stored as plain text in the project file.",
+          "type": "string"
+        },
+        "authcfg": {
+          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`.",
+          "type": "string"
+        },
+        "sslmode": {
+          "description": "The SSL mode of the connection, `prefer` if not set.",
+          "enum": [
+            "disable",
+            "allow",
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "table"
+      ],
+      "title": "PostgreSQL Datasource",
+      "type": "object"
+    },
+    "ProjectMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "custom_properties": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "type": "object"
+        },
+        "crs": {
+          "default": "EPSG:4326",
+          "pattern": "^EPSG:\\d+$",
+          "type": "string"
+        },
+        "author": {
+          "default": "",
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "extent": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "ProjectMetadata",
+      "type": "object"
+    },
+    "RasterDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "layer_id": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "layer_type": {
+          "const": "raster",
+          "type": "string"
+        },
+        "crs": {
+          "pattern": "^EPSG:\\d+$",
+          "type": "string"
+        },
+        "custom_properties": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "type": "object"
+        },
+        "is_read_only": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_identifiable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_private": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_searchable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_removable": {
+          "default": true,
+          "type": "boolean"
+        },
+        "datasource": {
+          "type": "string"
+        },
+        "datasource_format": {
+          "enum": [
+            "wms"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
         "crs",
+        "datasource",
         "datasource_format",
-        "fields",
-        "form_config",
-        "geometry_type",
         "name",
         "layer_type"
       ],
+      "title": "RasterDataset",
+      "type": "object"
+    },
+    "Relation": {
+      "additionalProperties": false,
+      "properties": {
+        "relation_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "from_layer_id": {
+          "type": "string"
+        },
+        "to_layer_id": {
+          "type": "string"
+        },
+        "field_pairs": {
+          "items": {
+            "$ref": "#/$defs/RelationFieldPair"
+          },
+          "type": "array"
+        },
+        "strength": {
+          "default": "association",
+          "enum": [
+            "association",
+            "composition"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "relation_id",
+        "name",
+        "from_layer_id",
+        "to_layer_id"
+      ],
+      "title": "Relation",
+      "type": "object"
+    },
+    "RelationFieldPair": {
+      "additionalProperties": false,
+      "properties": {
+        "from_field": {
+          "type": "string"
+        },
+        "to_field": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_field",
+        "to_field"
+      ],
+      "title": "RelationFieldPair",
+      "type": "object"
+    },
+    "VectorDataset": {
+      "additionalProperties": false,
       "allOf": [
         {
+          "else": {
+            "properties": {
+              "crs": {
+                "pattern": "^EPSG:\\d+$"
+              }
+            }
+          },
           "if": {
             "properties": {
               "geometry_type": {
@@ -520,13 +760,6 @@
             "properties": {
               "crs": {
                 "pattern": "^(EPSG:\\d+)?$"
-              }
-            }
-          },
-          "else": {
-            "properties": {
-              "crs": {
-                "pattern": "^EPSG:\\d+$"
               }
             }
           }
@@ -548,7 +781,7 @@
           "then": {
             "properties": {
               "datasource": {
-                "$ref": "#/definitions/OgrDatasource"
+                "$ref": "#/$defs/OgrDatasource"
               }
             }
           }
@@ -567,26 +800,7 @@
           "then": {
             "properties": {
               "datasource": {
-                "$ref": "#/definitions/PostgresDatasource"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "datasource_format": {
-                "const": "wfs"
-              }
-            },
-            "required": [
-              "datasource_format"
-            ]
-          },
-          "then": {
-            "properties": {
-              "datasource": {
-                "$ref": "#/definitions/WfsDatasource"
+                "$ref": "#/$defs/PostgresDatasource"
               }
             }
           }
@@ -605,7 +819,26 @@
           "then": {
             "properties": {
               "datasource": {
-                "$ref": "#/definitions/OapifDatasource"
+                "$ref": "#/$defs/OapifDatasource"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "datasource_format": {
+                "const": "wfs"
+              }
+            },
+            "required": [
+              "datasource_format"
+            ]
+          },
+          "then": {
+            "properties": {
+              "datasource": {
+                "$ref": "#/$defs/WfsDatasource"
               }
             }
           }
@@ -652,589 +885,277 @@
           }
         }
       ],
-      "title": "Vector Dataset",
+      "properties": {
+        "layer_id": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "layer_type": {
+          "const": "vector",
+          "type": "string"
+        },
+        "crs": {
+          "type": "string"
+        },
+        "custom_properties": {
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "type": "object"
+        },
+        "visual_styles": {
+          "items": {
+            "$ref": "#/$defs/VisualStyle"
+          },
+          "type": "array"
+        },
+        "is_read_only": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_identifiable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_private": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_searchable": {
+          "default": false,
+          "type": "boolean"
+        },
+        "is_removable": {
+          "default": true,
+          "type": "boolean"
+        },
+        "geometry_type": {
+          "enum": [
+            "Point",
+            "LineString",
+            "Polygon",
+            "MultiPoint",
+            "MultiLineString",
+            "MultiPolygon",
+            "NoGeometry"
+          ],
+          "type": "string"
+        },
+        "datasource": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OgrDatasource"
+            },
+            {
+              "$ref": "#/$defs/PostgresDatasource"
+            },
+            {
+              "$ref": "#/$defs/WfsDatasource"
+            },
+            {
+              "$ref": "#/$defs/OapifDatasource"
+            }
+          ],
+          "description": "An existing layer to load instead of creating a new one. Its properties depend on `datasource_format`: `OgrDatasource` for `gpkg` and `ogr`, `PostgresDatasource` for `postgres`, `WfsDatasource` for `wfs` and `OapifDatasource` for `oapif`. `geometry_type` is then ignored as the data provider decides it, `crs` is still set on the layer, and `data` is not supported. Required for the `ogr`, `postgres`, `wfs` and `oapif` formats, which only load existing layers, and not supported for `memory`."
+        },
+        "datasource_format": {
+          "enum": [
+            "gpkg",
+            "memory",
+            "ogr",
+            "postgres",
+            "oapif",
+            "wfs"
+          ],
+          "type": "string"
+        },
+        "fields": {
+          "items": {
+            "$ref": "#/$defs/Field"
+          },
+          "type": "array"
+        },
+        "virtual_fields": {
+          "items": {
+            "$ref": "#/$defs/Field"
+          },
+          "type": "array"
+        },
+        "form_config": {
+          "allOf": [
+            {
+              "items": {
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "tab",
+                      "group_box",
+                      "row"
+                    ]
+                  }
+                }
+              }
+            }
+          ],
+          "items": {
+            "$ref": "#/$defs/FormItem"
+          },
+          "type": "array"
+        },
+        "data": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "primary_key": {
+          "type": "string"
+        },
+        "indices": {
+          "items": {},
+          "type": "array"
+        },
+        "foreign_keys": {
+          "items": {},
+          "type": "array"
+        },
+        "display_expression": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "foreign_keys",
+        "indices",
+        "primary_key",
+        "crs",
+        "datasource_format",
+        "fields",
+        "form_config",
+        "geometry_type",
+        "name",
+        "layer_type"
+      ],
+      "title": "VectorDataset",
       "type": "object"
     },
-    "OgrDatasource": {
-      "title": "OGR Datasource",
-      "description": "An existing layer in a file readable by OGR, e.g. a GeoPackage, a Shapefile or a GeoJSON file.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "path": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The path to the file, e.g. `/path/to/data.gpkg`."
+    "VisualStyle": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "qml_filename": {
+              "type": "string",
+              "description": "A path to a QGIS Layer Style file (.qlr) that defines the visual style for the layer. The path can be absolute or relative to the JSON file."
+            }
+          }
         },
-        "layer_name": {
-          "type": "string",
-          "description": "The name of the layer in the file, e.g. `roads`. If not set, the first layer of the file is loaded."
+        {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "qml_content": {
+              "type": "string",
+              "description": "The content of a QGIS Layer Style file (.qlr) that defines the visual style for the layer."
+            }
+          }
         }
-      },
-      "required": [
-        "path"
-      ]
-    },
-    "PostgresDatasource": {
-      "title": "PostgreSQL Datasource",
-      "description": "An existing table or view in a PostgreSQL database. The connection is set either with a `service` from the `pg_service.conf` file, or with `host`, `port` and `dbname`. Prefer `service` or `authcfg` over `username` and `password`, as these are stored as plain text in the project file.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "table": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The name of the table or view, e.g. `roads`."
-        },
-        "schema": {
-          "type": "string",
-          "description": "The schema of the table or view, e.g. `public`."
-        },
-        "geometry_column": {
-          "type": "string",
-          "description": "The name of the geometry column, e.g. `geom`. Not set for tables without geometry."
-        },
-        "key_column": {
-          "type": "string",
-          "description": "The name of the column that uniquely identifies the features, e.g. `id`. QGIS detects the primary key of tables, so it is mostly needed for views."
-        },
-        "service": {
-          "type": "string",
-          "description": "The name of a service in the `pg_service.conf` file, e.g. `my_db`."
-        },
-        "host": {
-          "type": "string",
-          "description": "The database server host name, e.g. `db.example.com`."
-        },
-        "port": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 65535,
-          "description": "The database server port, e.g. `5432`."
-        },
-        "dbname": {
-          "type": "string",
-          "description": "The name of the database, e.g. `gis`."
-        },
-        "username": {
-          "type": "string",
-          "description": "The database user name."
-        },
-        "password": {
-          "type": "string",
-          "description": "The database user password, stored as plain text in the project file."
-        },
-        "authcfg": {
-          "type": "string",
-          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`."
-        },
-        "sslmode": {
-          "enum": [
-            "disable",
-            "allow",
-            "prefer",
-            "require",
-            "verify-ca",
-            "verify-full"
-          ],
-          "type": "string",
-          "description": "The SSL mode of the connection, `prefer` if not set."
-        }
-      },
-      "required": [
-        "table"
       ]
     },
     "WfsDatasource": {
-      "title": "WFS Datasource",
-      "description": "A feature type of an OGC Web Feature Service (WFS).",
-      "type": "object",
       "additionalProperties": false,
+      "description": "A feature type of an OGC Web Feature Service (WFS).",
       "properties": {
         "url": {
-          "type": "string",
+          "description": "The URL of the service, e.g. `https://example.com/wfs`.",
           "minLength": 1,
-          "description": "The URL of the service, e.g. `https://example.com/wfs`."
+          "type": "string"
         },
         "type_name": {
-          "type": "string",
+          "description": "The name of the feature type, e.g. `ns:roads`.",
           "minLength": 1,
-          "description": "The name of the feature type, e.g. `ns:roads`."
+          "type": "string"
         },
         "version": {
+          "description": "The WFS version, detected from the service if not set or `auto`.",
           "enum": [
             "auto",
             "1.0.0",
             "1.1.0",
             "2.0.0"
           ],
-          "type": "string",
-          "description": "The WFS version, detected from the service if not set or `auto`."
+          "type": "string"
         },
         "authcfg": {
-          "type": "string",
-          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`."
+          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`.",
+          "type": "string"
         }
       },
       "required": [
         "url",
         "type_name"
-      ]
-    },
-    "OapifDatasource": {
-      "title": "OGC API Features Datasource",
-      "description": "A collection of an OGC API - Features service.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "url": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The URL of the service landing page, e.g. `https://example.com/ogcapi`."
-        },
-        "collection": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The ID of the collection, e.g. `roads`."
-        },
-        "authcfg": {
-          "type": "string",
-          "description": "The ID of a QGIS authentication configuration holding the credentials, e.g. `abc1234`."
-        }
-      },
-      "required": [
-        "url",
-        "collection"
-      ]
-    },
-    "RasterDataset": {
-      "additionalProperties": false,
-      "properties": {
-        "crs": {
-          "pattern": "^EPSG:\\d+$",
-          "type": "string"
-        },
-        "custom_properties": {
-          "$ref": "#/definitions/CustomProperties"
-        },
-        "datasource": {
-          "type": "string"
-        },
-        "datasource_format": {
-          "enum": [
-            "wms"
-          ],
-          "type": "string"
-        },
-        "is_identifiable": {
-          "type": "boolean"
-        },
-        "is_private": {
-          "type": "boolean"
-        },
-        "is_read_only": {
-          "type": "boolean"
-        },
-        "is_removable": {
-          "type": "boolean"
-        },
-        "is_searchable": {
-          "type": "boolean"
-        },
-        "layer_id": {
-          "type": "string"
-        },
-        "layer_type": {
-          "type": "string",
-          "const": "raster"
-        },
-        "name": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "crs",
-        "datasource",
-        "datasource_format",
-        "name",
-        "layer_type"
       ],
-      "title": "Raster Dataset",
+      "title": "WFS Datasource",
       "type": "object"
-    },
-    "LegendTreeItemBase": {
-      "properties": {
-        "item_id": {
-          "type": "string"
-        },
-        "is_checked": {
-          "type": "boolean"
-        },
-        "name": {
-          "type": "string"
-        },
-        "legend_item_type": {
-          "enum": [
-            "group",
-            "layer"
-          ],
-          "type": "string"
-        }
-      },
-      "required": [
-        "item_id",
-        "name",
-        "legend_item_type"
-      ],
-      "title": "Child",
-      "type": "object"
-    },
-    "LegendTreeLayer": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/LegendTreeItemBase"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "layer_id": {
-              "type": "string"
-            },
-            "legend_item_type": {
-              "type": "string",
-              "const": "layer"
-            }
-          },
-          "required": [
-            "layer_id"
-          ]
-        }
-      ]
-    },
-    "LegendTreeGroup": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/LegendTreeItemBase"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "is_mutually_exclusive": {
-              "type": "boolean"
-            },
-            "mutually_exclusive_child_index": {
-              "minimum": -1,
-              "type": "integer"
-            },
-            "children": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/LegendTreeItem"
-              }
-            },
-            "legend_item_type": {
-              "type": "string",
-              "const": "group"
-            }
-          },
-          "required": [
-            "children"
-          ]
-        }
-      ]
-    },
-    "LegendTreeItem": {
-      "oneOf": [
-        {
-          "$ref": "#/definitions/LegendTreeGroup"
-        },
-        {
-          "$ref": "#/definitions/LegendTreeLayer"
-        }
-      ],
-      "unevaluatedProperties": false
-    },
-    "PolymorphicRelation": {
-      "additionalProperties": false,
-      "properties": {
-        "field_pairs": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "from_field": {
-                "type": "string"
-              },
-              "to_field": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "from_field",
-              "to_field"
-            ],
-            "title": "FieldPair",
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "from_layer_id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "relation_id": {
-          "type": "string"
-        },
-        "strength": {
-          "enum": [
-            "association",
-            "composition"
-          ],
-          "type": "string"
-        },
-        "to_layer_expression": {
-          "type": "string"
-        },
-        "to_layer_field": {
-          "type": "string"
-        },
-        "to_layer_ids": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "relation_id",
-        "name",
-        "from_layer_id",
-        "to_layer_field",
-        "to_layer_expression",
-        "to_layer_ids"
-      ],
-      "title": "Relation",
-      "type": "object"
-    },
-    "Project": {
-      "additionalProperties": false,
-      "properties": {
-        "author": {
-          "type": "string"
-        },
-        "custom_properties": {
-          "$ref": "#/definitions/CustomProperties"
-        },
-        "title": {
-          "type": "string"
-        },
-        "crs": {
-          "type": "string",
-          "pattern": "^EPSG:\\d+$"
-        },
-        "extent": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "title"
-      ],
-      "title": "Project",
-      "type": "object"
-    },
-    "Relation": {
-      "additionalProperties": false,
-      "properties": {
-        "field_pairs": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "from_field": {
-                "type": "string"
-              },
-              "to_field": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "from_field",
-              "to_field"
-            ],
-            "title": "FieldPair",
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "from_layer_id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "relation_id": {
-          "type": "string"
-        },
-        "strength": {
-          "enum": [
-            "association",
-            "composition"
-          ],
-          "type": "string"
-        },
-        "to_layer_id": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "relation_id",
-        "name",
-        "from_layer_id",
-        "to_layer_id"
-      ],
-      "title": "Relation",
-      "type": "object"
-    },
-    "WidgetConfig": {
-      "anyOf": [
-        {
-          "description": "Used by ValueMap widget",
-          "properties": {
-            "map": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "description": "Used by Range widget",
-          "properties": {
-            "allow_null": {
-              "type": "boolean"
-            },
-            "max": {
-              "type": "integer"
-            },
-            "minimum": {
-              "type": "integer"
-            },
-            "precision": {
-              "type": "integer"
-            },
-            "step": {
-              "type": "number"
-            },
-            "style": {
-              "type": "string"
-            },
-            "suffix": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "description": "Used by ExternalResource widget",
-          "properties": {
-            "DocumentViewerHeight": {
-              "type": "integer"
-            },
-            "DocumentViewerWidth": {
-              "type": "integer"
-            },
-            "FileWidgetFilter": {
-              "type": "string"
-            },
-            "DocumentViewer": {
-              "type": "boolean"
-            },
-            "FileWidgetButton": {
-              "type": "boolean"
-            },
-            "StorageAuthConfigId": {
-              "type": [
-                "null",
-                "string"
-              ]
-            },
-            "StorageMode": {
-              "type": "integer"
-            },
-            "StorageType": {
-              "type": "null"
-            },
-            "FileWidget": {
-              "type": "boolean"
-            },
-            "RelativeStorage": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "description": "Used by DateTime widget",
-          "properties": {
-            "allow_null": {
-              "type": "boolean"
-            },
-            "calendar_popup": {
-              "type": "boolean"
-            },
-            "display_format": {
-              "type": "string"
-            },
-            "field_format": {
-              "type": "string"
-            },
-            "field_format_overwrite": {
-              "type": "boolean"
-            },
-            "field_iso_format": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "description": "Used by CheckBox widget",
-          "properties": {
-            "allow_null": {
-              "type": "boolean"
-            },
-            "checked_state": {
-              "type": "string"
-            },
-            "text_display_method": {
-              "enum": [
-                0,
-                1,
-                2
-              ],
-              "type": "integer"
-            },
-            "unchecked_state": {
-              "type": "string"
-            }
-          },
-          "type": "object"
-        },
-        {
-          "description": "Used by TextEdit widget",
-          "properties": {
-            "is_multiline": {
-              "type": "boolean"
-            },
-            "use_html": {
-              "type": "boolean"
-            }
-          },
-          "type": "object"
-        }
-      ]
     }
-  }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "project": {
+      "$ref": "#/$defs/ProjectMetadata"
+    },
+    "version": {
+      "type": "string"
+    },
+    "datasets": {
+      "items": {
+        "$ref": "#/$defs/DatasetGroup"
+      },
+      "type": "array"
+    },
+    "legend_tree": {
+      "$ref": "#/$defs/LegendTreeGroup"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/Relation"
+      },
+      "type": "array"
+    },
+    "polymorphic_relations": {
+      "items": {
+        "$ref": "#/$defs/PolymorphicRelation"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "datasets",
+    "project",
+    "relations",
+    "polymorphic_relations",
+    "legend_tree",
+    "version"
+  ],
+  "title": "Project",
+  "type": "object"
 }
