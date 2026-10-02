@@ -297,9 +297,6 @@
         "label": {
           "type": "string"
         },
-        "text": {
-          "type": "string"
-        },
         "visibility_expression": {
           "default": "",
           "type": "string"
