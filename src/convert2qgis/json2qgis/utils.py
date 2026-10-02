@@ -560,7 +560,11 @@ def get_postgres_datasource_uri(datasource: PostgresDatasourceDef) -> str:
     uri.setAuthConfigId(datasource.authcfg or "")
 
     if datasource.sslmode:
-        uri.setSslMode(QgsDataSourceUri.decodeSslMode(datasource.sslmode))
+        # NOTE `QgsDataSourceUri.setSslMode` is only available since QGIS 3.42
+        if Qgis.versionInt() >= 34200:  # noqa: PLR2004
+            uri.setSslMode(QgsDataSourceUri.decodeSslMode(datasource.sslmode))
+        else:
+            uri.setParam("sslmode", datasource.sslmode)
 
     uri.setDataSource(
         datasource.schema or "",
